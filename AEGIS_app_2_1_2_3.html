@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEGIS — Companion App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --page:#eef2f0;
+  --app:#fbfcfb;
+  --surface:#ffffff;
+  --surface-2:#f2f6f4;
+  --ink:#1c2622;
+  --muted:#748b83;
+  --muted-2:#a3b3ac;
+  --line:#e4ebe7;
+  --primary:#2f6f63;
+  --primary-ink:#1f4d44;
+  --primary-tint:#e3efec;
+  --safe:#4c9a82;
+  --alert:#d97a5f;
+  --alert-tint:#f7e7e1;
+  --gold:#c79a4b;
+  --gold-ink:#8a6a2e;
+  --gold-soft:#dcb56e;
+  --gold-tint:#f6ecd7;
+  --disp:'Sora', sans-serif;
+  --body:'Inter', sans-serif;
+  --mono:'JetBrains Mono', monospace;
+  --radius:20px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; min-height:100vh; background:
+    radial-gradient(1200px 700px at 20% -10%, #f3f7f5 0%, var(--page) 55%);
+  font-family:var(--body); color:var(--ink);
+  display:flex; align-items:center; justify-content:center; padding:36px 16px;
+}
+.icon{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
+.stage{display:flex; flex-direction:column; align-items:center; gap:18px;}
+.hook{display:flex; flex-direction:column; align-items:center; text-align:center; max-width:460px; margin-bottom:2px;}
+.hook-line{font-family:var(--disp); font-weight:700; font-size:27px; letter-spacing:-.01em; color:var(--ink);}
+.hook-line span{color:var(--primary);}
+.hook-stats{display:flex; align-items:center; gap:18px; margin-top:16px; padding:14px 22px; background:var(--surface); border:1px solid var(--line); border-radius:16px;}
+.hstat{display:flex; flex-direction:column; align-items:center; gap:2px;}
+.hstat b{font-family:var(--disp); font-size:20px; font-weight:700; color:var(--primary-ink);}
+.hstat span{font-size:10px; color:var(--muted); max-width:100px; line-height:1.3;}
+.hdiv{width:1px; height:30px; background:var(--line);}
+.hook-sub{margin-top:14px; font-size:12.5px; color:var(--muted); line-height:1.55; max-width:400px;}
+
+/* ---- trend card (2021–2026) ---- */
+@keyframes riseBar{from{transform:scaleY(0);}to{transform:scaleY(1);}}
+@keyframes fadeUp{from{opacity:0; transform:translateY(6px);}to{opacity:1; transform:translateY(0);}}
+@keyframes pulseGlow{0%,100%{opacity:.55;}50%{opacity:1;}}
+.trend-card{
+  margin-top:14px; padding:20px 22px 18px; width:100%; max-width:460px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--gold-tint) 0%, transparent 55%),
+    var(--surface);
+  border:1px solid var(--line); border-radius:18px; position:relative; overflow:hidden;
+  box-shadow:0 1px 2px rgba(28,38,34,.03), 0 10px 26px -18px rgba(199,154,75,.35);
+  animation:fadeUp .5s ease both;
+}
+.trend-card::before{
+  content:""; position:absolute; top:-40%; right:-18%; width:180px; height:180px; border-radius:50%;
+  background:radial-gradient(circle, rgba(199,154,75,.16), transparent 70%); pointer-events:none;
+}
+.trend-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; position:relative;}
+.trend-top .t-label-wrap{display:flex; align-items:center; gap:7px;}
+.trend-top .t-icon{
+  width:22px; height:22px; border-radius:7px; background:linear-gradient(145deg, var(--gold-soft), var(--gold));
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  box-shadow:0 3px 8px -3px rgba(199,154,75,.6);
+}
+.trend-top .t-icon svg{width:12.5px; height:12.5px; color:#fff; stroke-width:2.2;}
+.trend-top .t-label{font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);}
+.trend-top .t-figure{display:flex; align-items:baseline; gap:5px; flex-shrink:0;}
+.trend-top .t-figure b{font-family:var(--disp); font-size:23px; font-weight:700; color:var(--gold-ink); letter-spacing:-.01em;}
+.trend-top .t-figure span{font-size:10px; color:var(--muted); white-space:nowrap;}
+.trend-bars{display:flex; align-items:flex-end; gap:10px; height:80px; margin-top:18px; padding:0 2px; position:relative;}
+.tbar-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:7px; position:relative;}
+.tbar-col .tval{font-family:var(--mono); font-size:9px; color:var(--muted-2); white-space:nowrap; transition:color .2s, transform .2s;}
+.tbar-col .tbar-track{width:100%; max-width:28px; height:100%; display:flex; align-items:flex-end; position:relative;}
+.tbar-col .tbar{
+  width:100%; border-radius:7px 7px 3px 3px; transform-origin:bottom;
+  background:linear-gradient(180deg, var(--gold-soft), var(--gold));
+  animation:riseBar .7s cubic-bezier(.22,1,.36,1) both; transition:filter .2s, transform .2s;
+  box-shadow:0 2px 6px -2px rgba(199,154,75,.5);
+}
+.tbar-col:nth-child(1) .tbar{animation-delay:.02s;}
+.tbar-col:nth-child(2) .tbar{animation-delay:.08s;}
+.tbar-col:nth-child(3) .tbar{animation-delay:.14s;}
+.tbar-col:nth-child(4) .tbar{animation-delay:.2s;}
+.tbar-col:nth-child(5) .tbar{animation-delay:.26s;}
+.tbar-col:nth-child(6) .tbar{animation-delay:.32s;}
+.tbar-col:hover .tbar{filter:brightness(1.08); transform:scaleX(1.08);}
+.tbar-col:hover .tval{color:var(--gold-ink); transform:translateY(-1px);}
+.tbar-col.is-peak .tbar{box-shadow:0 0 0 2px var(--gold-tint), 0 4px 12px -2px rgba(199,154,75,.65);}
+.tbar-col.is-peak .tval{color:var(--gold-ink); font-weight:700;}
+.tbar-col.is-est .tbar{
+  background:repeating-linear-gradient(135deg, var(--gold-soft), var(--gold-soft) 4px, var(--gold-tint) 4px, var(--gold-tint) 8px);
+  border:1.5px dashed var(--gold); box-shadow:none;
+}
+.tbar-col.is-est .tbar::after{
+  content:""; position:absolute; top:-3px; left:50%; width:5px; height:5px; border-radius:50%;
+  background:var(--gold); transform:translateX(-50%); animation:pulseGlow 1.8s ease-in-out infinite;
+}
+.tbar-col .tyear{font-family:var(--mono); font-size:9.5px; color:var(--muted); margin-top:1px;}
+.tbar-col.is-est .tyear{color:var(--gold-ink); font-weight:600;}
+
+/* ---- golden-hour gap callout ---- */
+.gh-callout{
+  margin-top:16px; padding:13px 14px; border-radius:13px; background:var(--primary-tint);
+  border:1px solid rgba(47,111,99,.14); display:flex; align-items:center; gap:12px;
+}
+.gh-callout .gh-ring{position:relative; width:44px; height:44px; flex-shrink:0;}
+.gh-callout .gh-ring svg{width:44px; height:44px; transform:rotate(-90deg);}
+.gh-callout .gh-ring circle{fill:none; stroke-width:4;}
+.gh-callout .gh-ring .gh-track{stroke:rgba(47,111,99,.15);}
+.gh-callout .gh-ring .gh-fill{stroke:var(--primary); stroke-linecap:round; stroke-dasharray:113; stroke-dashoffset:90.4; animation:ghFill 1s .5s cubic-bezier(.22,1,.36,1) both;}
+@keyframes ghFill{from{stroke-dashoffset:113;}to{stroke-dashoffset:90.4;}}
+.gh-callout .gh-pct{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--disp); font-size:12px; font-weight:700; color:var(--primary-ink);}
+.gh-callout .gh-text b{display:block; font-family:var(--disp); font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.35;}
+.gh-callout .gh-text span{font-size:10.5px; color:var(--muted); line-height:1.4;}
+
+.trend-foot{display:flex; align-items:flex-start; gap:7px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line); font-size:10px; color:var(--muted); line-height:1.5;}
+.trend-foot .dot-est{width:8px; height:8px; border-radius:2.5px; border:1.5px dashed var(--gold); flex-shrink:0; margin-top:2px;}
+.trend-foot .src{display:block; margin-top:5px; font-family:var(--mono); font-size:9px; color:var(--muted-2); letter-spacing:.02em;}
+.trend-foot .dot-est{width:7px; height:7px; border-radius:2px; border:1.5px dashed var(--gold); flex-shrink:0;}
+.stage-label{font-family:var(--mono); font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px;}
+.stage-label .dot{width:6px;height:6px;border-radius:50%;background:var(--safe);}
+
+/* ---- phone shell ---- */
+.phone{
+  width:376px; height:800px; background:#0e1613; border-radius:52px; padding:14px;
+  box-shadow:0 60px 100px -40px rgba(20,30,26,.35), 0 0 0 1px rgba(20,30,26,.06);
+}
+.screen{
+  width:100%; height:100%; background:var(--app); border-radius:38px; overflow:hidden;
+  display:flex; flex-direction:column; position:relative;
+}
+.statusbar{
+  display:flex; justify-content:space-between; align-items:center; padding:16px 26px 4px;
+  font-family:var(--mono); font-size:12px; color:var(--ink); flex-shrink:0;
+}
+.statusbar .right{display:flex; gap:6px; align-items:center; color:var(--muted);}
+
+.appheader{padding:8px 22px 18px; flex-shrink:0;}
+.appheader .eyebrow{font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px;}
+.appheader h1{font-family:var(--disp); font-size:22px; font-weight:700; margin:0; letter-spacing:-.01em;}
+
+.content{flex:1; overflow-y:auto; padding:0 22px 20px; scrollbar-width:none;}
+.content::-webkit-scrollbar{display:none;}
+
+/* ---- bottom nav ---- */
+.tabbar{
+  flex-shrink:0; display:flex; justify-content:space-around; align-items:center;
+  padding:10px 10px 16px; border-top:1px solid var(--line); background:var(--surface);
+}
+.tab{
+  display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none;
+  color:var(--muted-2); cursor:pointer; padding:6px 4px; border-radius:12px; transition:.15s;
+  font-family:var(--body); font-size:9.5px; font-weight:600; flex:1; min-width:0;
+}
+.tab.active{color:var(--primary-ink);}
+.tab .icon{width:19px; height:19px;}
+
+/* ---- cards / shared ---- */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px;}
+.card + .card{margin-top:12px;}
+.row{display:flex; align-items:center; justify-content:space-between;}
+.section-title{font-family:var(--disp); font-size:14px; font-weight:600; margin:22px 0 10px; color:var(--ink);}
+.section-title:first-child{margin-top:4px;}
+.muted{color:var(--muted); font-size:12.5px;}
+.pill{font-family:var(--mono); font-size:10.5px; padding:4px 9px; border-radius:100px; background:var(--primary-tint); color:var(--primary-ink);}
+.pill.alert{background:var(--alert-tint); color:#a24b32;}
+
+/* ---- HOME: breathing ring ---- */
+.guardian{display:flex; flex-direction:column; align-items:center; padding:18px 0 8px;}
+.ring{
+  width:172px; height:172px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+.ring::before{
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background:conic-gradient(from 0deg, var(--primary-tint), var(--surface-2) 60%, var(--primary-tint));
+  animation:spin 14s linear infinite;
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ring .breathe{
+  width:132px; height:132px; border-radius:50%; background:var(--surface); border:1px solid var(--line);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; z-index:2;
+  animation:breathe 4s ease-in-out infinite;
+}
+@keyframes breathe{0%,100%{transform:scale(1);}50%{transform:scale(1.035);}}
+.ring.alert .breathe{animation:none; border-color:var(--alert);}
+.ring .breathe .icon{width:30px; height:30px; color:var(--primary);}
+.ring.alert .breathe .icon{color:var(--alert);}
+.ring .breathe b{font-family:var(--disp); font-size:13px; font-weight:600;}
+.guardian .g-status{margin-top:16px; font-family:var(--disp); font-size:16px; font-weight:600;}
+.guardian .g-sub{font-size:12.5px; color:var(--muted); margin-top:3px;}
+
+.stat3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px;}
+.stat3 .card{padding:14px 10px; text-align:center;}
+.stat3 .icon{width:17px;height:17px;color:var(--primary); margin:0 auto 8px;}
+.stat3 b{display:block; font-family:var(--disp); font-size:15px;}
+.stat3 span{font-size:10.5px; color:var(--muted-2);}
+
+.safe-btn{
+  width:100%; margin-top:16px; padding:15px; border-radius:14px; border:none;
+  background:var(--primary); color:#fff; font-family:var(--body); font-weight:600; font-size:14px;
+  display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
+}
+.activity{display:flex; gap:12px; padding:12px 0; border-top:1px solid var(--line);}
+.activity:first-of-type{border-top:none;}
+.activity .icon{width:16px; height:16px; color:var(--muted); margin-top:2px;}
+.activity b{font-size:12.5px; display:block;}
+.activity span{font-size:11px; color:var(--muted-2); font-family:var(--mono);}
+
+/* ---- MAP ---- */
+.map-box{
+  height:230px; border-radius:16px; overflow:hidden; position:relative; background:var(--surface-2);
+  border:1px solid var(--line);
+}
+.map-box svg{width:100%; height:100%;}
+.map-pin{position:absolute; top:48%; left:54%; transform:translate(-50%,-100%);}
+.map-pin .pulse{width:34px; height:34px; border-radius:50%; background:rgba(47,111,99,.18); position:absolute; top:14px; left:50%; transform:translate(-50%,-50%); animation:mp 2.4s ease-out infinite;}
+@keyframes mp{0%{transform:translate(-50%,-50%) scale(.5); opacity:.9;}100%{transform:translate(-50%,-50%) scale(2.4); opacity:0;}}
+.map-pin .dot2{width:14px; height:14px; border-radius:50%; background:var(--primary); border:3px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,.2); position:relative; z-index:2;}
+.addr-card{display:flex; gap:12px; align-items:flex-start;}
+.addr-card .icon{color:var(--primary); flex-shrink:0; margin-top:2px;}
+.addr-card b{font-size:13px; display:block;}
+.addr-card span{font-size:11.5px; color:var(--muted); font-family:var(--mono);}
+.coord{font-family:var(--mono); font-size:11px; color:var(--muted);}
+
+/* ---- SOS / alert flow ---- */
+.sos-btn{
+  width:100%; padding:16px; border-radius:14px; border:1.5px solid var(--alert); background:var(--alert-tint);
+  color:#a24b32; font-family:var(--body); font-weight:700; font-size:14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:8px; margin-top:6px;
+}
+.countdown-ring{width:120px; height:120px; margin:14px auto; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--alert-tint); border:1.5px solid var(--alert);}
+.countdown-ring b{font-family:var(--disp); font-size:38px; color:#a24b32;}
+.two-btn{display:flex; gap:10px; margin-top:14px;}
+.two-btn button{flex:1; padding:13px; border-radius:12px; font-family:var(--body); font-weight:600; font-size:13px; cursor:pointer; border:1px solid var(--line); background:var(--surface); color:var(--ink); display:flex; align-items:center; justify-content:center; gap:6px;}
+.two-btn button.primary{background:var(--alert); border-color:var(--alert); color:#fff;}
+.video-frame{
+  aspect-ratio:16/10; border-radius:14px; background:#16221d; position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; color:#7c9990; font-family:var(--mono); font-size:11px; gap:6px;
+}
+.video-frame .live{position:absolute; top:10px; left:10px; display:flex; gap:5px; align-items:center; font-size:10px; color:#fff; background:rgba(217,122,95,.9); padding:3px 8px; border-radius:100px;}
+.video-frame .live .d{width:6px; height:6px; border-radius:50%; background:#fff;}
+.esc-track{display:flex; flex-direction:column; gap:0; margin-top:16px;}
+.esc-step{display:flex; gap:12px; padding:10px 0; position:relative;}
+.esc-step::before{content:""; position:absolute; left:11px; top:28px; bottom:-10px; width:1px; background:var(--line);}
+.esc-step:last-child::before{display:none;}
+.esc-dot{width:23px; height:23px; border-radius:50%; border:1.5px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; flex-shrink:0; z-index:1;}
+.esc-step.done .esc-dot{background:var(--primary); border-color:var(--primary); color:#fff;}
+.esc-step.active .esc-dot{border-color:var(--alert); color:var(--alert); animation:pulse2 1.2s infinite;}
+@keyframes pulse2{50%{opacity:.4;}}
+.esc-dot .icon{width:12px; height:12px;}
+.esc-step b{font-size:12.5px; display:block;}
+.esc-step span{font-size:11px; color:var(--muted-2); font-family:var(--mono);}
+.next-btn{width:100%; margin-top:16px; padding:13px; border-radius:12px; border:1px solid var(--line); background:var(--surface); font-weight:600; font-size:13px; cursor:pointer; color:var(--ink);}
+.calm-note{display:flex; gap:10px; background:var(--primary-tint); border-radius:12px; padding:13px 14px; margin-top:14px;}
+.calm-note .icon{width:16px; height:16px; color:var(--primary-ink); flex-shrink:0; margin-top:1px;}
+.calm-note p{margin:0; font-size:11.5px; color:var(--primary-ink); line-height:1.5;}
+
+/* ---- CONTACTS ---- */
+.contact-row{display:flex; align-items:center; gap:12px; padding:13px 0; border-top:1px solid var(--line);}
+.contact-row:first-of-type{border-top:none;}
+.avatar{width:38px; height:38px; border-radius:50%; background:var(--primary-tint); color:var(--primary-ink); display:flex; align-items:center; justify-content:center; font-family:var(--disp); font-weight:600; font-size:13px; flex-shrink:0;}
+.contact-row .info{flex:1;}
+.contact-row b{font-size:13px; display:block;}
+.contact-row span{font-size:11px; color:var(--muted-2);}
+.rank{font-family:var(--mono); font-size:10px; color:var(--muted-2);}
+.add-row{display:flex; align-items:center; gap:10px; padding:13px 0; color:var(--primary); font-weight:600; font-size:13px; cursor:pointer; border-top:1px solid var(--line);}
+.add-row .plus{width:26px; height:26px; border-radius:50%; border:1.5px dashed var(--primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+
+/* ---- DEVICE ---- */
+.toggle2{display:flex; background:var(--surface-2); border-radius:100px; padding:3px; margin-bottom:16px;}
+.toggle2 button{flex:1; border:none; background:none; padding:9px; border-radius:100px; font-weight:600; font-size:12.5px; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;}
+.toggle2 button.active{background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.spec-row{display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line);}
+.spec-row:first-of-type{border-top:none;}
+.spec-row .icon{color:var(--primary); flex-shrink:0;}
+.spec-row b{font-size:12.5px; display:block;}
+.spec-row span{font-size:11px; color:var(--muted-2);}
+.switch-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line);}
+.switch-row:first-of-type{border-top:none;}
+.switch-row b{font-size:12.5px; display:block;}
+.switch-row span{font-size:11px; color:var(--muted-2);}
+.switch{width:40px; height:23px; border-radius:100px; background:var(--line); position:relative; cursor:pointer; flex-shrink:0; transition:.2s;}
+.switch::after{content:""; width:17px; height:17px; border-radius:50%; background:#fff; position:absolute; top:3px; left:3px; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.switch.on{background:var(--primary);}
+.switch.on::after{left:20px;}
+.device-id-card{background:#12201b; border-radius:16px; padding:16px 18px; margin-top:12px; color:#f2f6f4;}
+.did-top{display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:10px; letter-spacing:.08em; color:#9fb3ab;}
+.did-top .icon{color:var(--gold);}
+.did-live{margin-left:auto; display:flex; align-items:center; gap:5px; font-size:10px; color:var(--safe);}
+.did-live .d{width:5px; height:5px; border-radius:50%; background:var(--safe);}
+.did-code{font-family:var(--mono); font-size:19px; font-weight:500; letter-spacing:.03em; margin-top:8px;}
+.did-sub{font-size:11px; color:#9fb3ab; margin-top:6px; line-height:1.5;}
+
+/* ---- STATS: why AEGIS exists ---- */
+.stats-card{background:linear-gradient(160deg, var(--primary-ink) 0%, #16332c 100%); border-radius:18px; padding:18px 18px 6px; color:#fff; margin-top:4px;}
+.stats-head{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.stats-head .eyebrow2{font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#a9c4bb;}
+.stats-head h3{font-family:var(--disp); font-size:15px; font-weight:600; margin:3px 0 0; color:#fff;}
+.stats-src{font-family:var(--mono); font-size:9px; color:#8fac9f; background:rgba(255,255,255,.08); padding:3px 8px; border-radius:100px; white-space:nowrap;}
+.stats-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px;}
+.stats-grid .sbox{background:rgba(255,255,255,.07); border-radius:12px; padding:10px 8px; text-align:center;}
+.stats-grid .sbox b{display:block; font-family:var(--disp); font-size:16px; font-weight:700; color:#fff;}
+.stats-grid .sbox span{font-size:9.5px; color:#9fb8af; line-height:1.3; display:block; margin-top:2px;}
+.stats-bars{margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.12);}
+.sbar-row{display:flex; align-items:center; gap:10px; margin-bottom:9px;}
+.sbar-row .syear{font-family:var(--mono); font-size:10.5px; color:#a9c4bb; width:32px; flex-shrink:0;}
+.sbar-track{flex:1; height:7px; border-radius:100px; background:rgba(255,255,255,.1); overflow:hidden;}
+.sbar-fill{height:100%; border-radius:100px; background:linear-gradient(90deg, var(--safe), var(--gold));}
+.sbar-row .sval{font-family:var(--mono); font-size:10.5px; color:#fff; width:52px; text-align:right; flex-shrink:0;}
+.stats-foot{display:flex; align-items:flex-start; gap:8px; margin:14px -18px 0; padding:12px 18px; background:rgba(217,122,95,.16); border-top:1px solid rgba(255,255,255,.1);}
+.stats-foot .icon{width:14px; height:14px; color:#f0b099; flex-shrink:0; margin-top:1px;}
+.stats-foot p{margin:0; font-size:11px; line-height:1.5; color:#f3d9cf;}
+.stats-split{display:flex; gap:8px; margin-top:10px;}
+.split-box{flex:1; border:1px solid var(--line); border-radius:12px; padding:11px; text-align:center;}
+.split-box .icon{width:16px; height:16px; color:var(--primary); margin:0 auto 6px;}
+.split-box b{display:block; font-family:var(--disp); font-size:14px;}
+.split-box span{font-size:10px; color:var(--muted-2);}
+
+/* mini caption below phone */
+.caption{max-width:376px; text-align:center; font-size:12px; color:var(--muted); line-height:1.5;}
+
+/* ---- store badges ---- */
+.badges{display:flex; gap:10px; margin-top:2px;}
+.badge{display:flex; align-items:center; gap:7px; background:#12201b; color:#fff; padding:7px 12px; border-radius:10px; font-family:var(--body);}
+.badge .icon{width:16px; height:16px; color:#fff;}
+.badge .bl{display:flex; flex-direction:column; line-height:1.15;}
+.badge .bl span{font-size:8px; color:#b9c9c2; text-transform:uppercase; letter-spacing:.04em;}
+.badge .bl b{font-size:12px; font-weight:600;}
+
+/* ---- demo mode ---- */
+.demo-fab{
+  width:100%; margin-top:14px; padding:14px; border-radius:14px; border:1px dashed var(--primary);
+  background:var(--primary-tint); color:var(--primary-ink); font-family:var(--body); font-weight:600; font-size:13px;
+  display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
+}
+.demo-banner{
+  position:absolute; left:14px; right:14px; bottom:80px; z-index:30;
+  background:rgba(14,22,19,.92); color:#f2f6f4; border-radius:14px; padding:13px 15px;
+  font-size:12.5px; line-height:1.5; display:flex; gap:10px; align-items:flex-start;
+  box-shadow:0 12px 30px -8px rgba(0,0,0,.4); animation:fadeUp .35s ease;
+}
+@keyframes fadeUp{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:translateY(0);}}
+.demo-banner .icon{width:15px; height:15px; color:var(--gold); flex-shrink:0; margin-top:2px;}
+.demo-banner .exit{
+  position:absolute; top:10px; right:12px; background:none; border:none; color:#9fb3ab;
+  font-family:var(--mono); font-size:10px; cursor:pointer; letter-spacing:.06em;
+}
+.demo-tag{
+  position:absolute; top:14px; left:14px; z-index:30; background:var(--gold); color:#3a2c0f;
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
+  padding:4px 9px; border-radius:100px; display:flex; align-items:center; gap:5px;
+}
+.demo-tag .dot{width:5px;height:5px;border-radius:50%;background:#3a2c0f; animation:pulse2 1.1s infinite;}
+
+/* ---- toast ---- */
+.toast{
+  position:absolute; left:14px; right:14px; bottom:80px; z-index:40;
+  background:rgba(14,22,19,.94); color:#f2f6f4; border-radius:14px; padding:12px 15px;
+  font-size:12.5px; font-weight:600; display:flex; gap:9px; align-items:center;
+  box-shadow:0 12px 30px -8px rgba(0,0,0,.4); animation:fadeUp .3s ease;
+}
+.toast .icon{width:15px; height:15px; color:var(--safe); flex-shrink:0;}
+.toast.out{animation:fadeDown .25s ease forwards;}
+@keyframes fadeDown{to{opacity:0; transform:translateY(6px);}}
+
+/* ---- camera / live feed ---- */
+.video-frame{position:relative;}
+.video-frame video, .video-frame img.snap{width:100%; height:100%; object-fit:cover; border-radius:14px;}
+.video-frame .camprompt{display:flex; flex-direction:column; align-items:center; gap:8px; padding:0 20px; text-align:center;}
+.video-frame .camprompt button{
+  border:none; background:var(--surface); color:var(--ink); font-family:var(--body); font-weight:600;
+  font-size:11.5px; padding:8px 14px; border-radius:100px; cursor:pointer; margin-top:2px;
+}
+.breathe-note{text-align:center; font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.5;}
+.reason-box{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-top:14px;}
+.reason-head{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:10px;}
+.reason-head .icon{color:var(--alert);}
+.reason-row{display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:12px;}
+.reason-row span{color:var(--muted);}
+.reason-row b{font-family:var(--mono); font-weight:500; font-size:12px; color:var(--ink);}
+.reason-conf{display:flex; justify-content:space-between; align-items:center; padding-top:9px; margin-top:5px; border-top:1px solid var(--line); font-size:12.5px;}
+.reason-conf span{color:var(--primary-ink); font-weight:600;}
+.reason-conf b{font-family:var(--disp); font-size:15px; color:var(--alert);}
+
+/* ---- calling UI ---- */
+.calling-wrap{display:flex; flex-direction:column; align-items:center; padding:30px 0 10px;}
+.calling-ring{width:96px; height:96px; border-radius:50%; background:var(--alert-tint); display:flex; align-items:center; justify-content:center; position:relative;}
+.calling-ring::before{content:""; position:absolute; inset:-8px; border-radius:50%; border:1.5px solid var(--alert); opacity:.5; animation:callpulse 1.4s ease-out infinite;}
+@keyframes callpulse{0%{transform:scale(.85); opacity:.6;}100%{transform:scale(1.25); opacity:0;}}
+.calling-ring .icon{width:34px; height:34px; color:var(--alert);}
+.calling-wrap b{margin-top:14px; font-family:var(--disp); font-size:15px;}
+.calling-wrap span{font-size:11.5px; color:var(--muted); margin-top:2px; font-family:var(--mono);}
+
+/* ---- escalation cancel ---- */
+.cancel-link{
+  width:100%; margin-top:10px; padding:12px; border-radius:12px; border:1px solid var(--line);
+  background:var(--surface); color:var(--ink); font-family:var(--body); font-weight:600; font-size:12.5px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
+}
+
+/* ---- editable contacts / settings ---- */
+.contact-row .edit-actions{display:flex; gap:6px;}
+.icon-btn{width:26px; height:26px; border-radius:50%; border:1px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+.icon-btn .icon{width:13px; height:13px; color:var(--muted);}
+.icon-btn.danger .icon{color:var(--alert);}
+.mini-form{display:flex; flex-direction:column; gap:8px; padding:12px 0; border-top:1px solid var(--line);}
+.mini-form input{font-family:var(--body); font-size:12.5px; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); outline:none;}
+.mini-form .frow{display:flex; gap:8px;}
+.mini-form .frow button{flex:1; padding:9px; border-radius:10px; border:none; font-weight:600; font-size:12px; cursor:pointer;}
+.mini-form .save{background:var(--primary); color:#fff;}
+.mini-form .cancel{background:var(--surface-2); color:var(--ink);}
+.timing-row{padding:12px 0; border-top:1px solid var(--line);}
+.timing-row:first-of-type{border-top:none;}
+.timing-row .row{margin-bottom:6px;}
+.timing-row b{font-size:12.5px;}
+.timing-row .val{font-family:var(--mono); font-size:12px; color:var(--primary-ink);}
+.timing-row input[type=range]{width:100%; accent-color:var(--primary);}
+.timing-row span.help{font-size:11px; color:var(--muted-2);}
+
+/* ---- PLANS / subscription ---- */
+.plan-toggle{display:flex; background:var(--surface-2); border-radius:100px; padding:3px; margin-bottom:16px;}
+.plan-toggle button{flex:1; border:none; background:none; padding:9px; border-radius:100px; font-weight:600; font-size:12px; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;}
+.plan-toggle button.active{background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.plan-toggle .save-tag{font-family:var(--mono); font-size:9px; background:var(--gold); color:#3a2c0f; padding:1px 6px; border-radius:100px;}
+.plan-card{border:1.5px solid var(--line); border-radius:18px; padding:18px; position:relative; background:var(--surface);}
+.plan-card + .plan-card{margin-top:12px;}
+.plan-card.reco{border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-tint);}
+.plan-card .reco-tag{position:absolute; top:-10px; right:16px; background:var(--primary); color:#fff; font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; padding:4px 10px; border-radius:100px;}
+.plan-card .p-head{display:flex; align-items:baseline; justify-content:space-between;}
+.plan-card .p-name{font-family:var(--disp); font-weight:700; font-size:15px;}
+.plan-card .p-price{font-family:var(--disp); font-weight:700; font-size:17px;}
+.plan-card .p-price span{font-family:var(--body); font-weight:500; font-size:11px; color:var(--muted); margin-left:2px;}
+.plan-card .p-sub{font-size:11.5px; color:var(--muted); margin-top:2px;}
+.plan-feat{display:flex; align-items:flex-start; gap:8px; margin-top:10px; font-size:12px;}
+.plan-feat .icon{width:14px; height:14px; color:var(--primary); flex-shrink:0; margin-top:1px;}
+.plan-feat.off{color:var(--muted-2);}
+.plan-feat.off .icon{color:var(--muted-2); opacity:.5;}
+.plan-btn{width:100%; margin-top:14px; padding:12px; border-radius:12px; border:1.5px solid var(--line); background:var(--surface); color:var(--ink); font-family:var(--body); font-weight:600; font-size:13px; cursor:pointer;}
+.plan-card.reco .plan-btn{background:var(--primary); border-color:var(--primary); color:#fff;}
+.plan-btn.current{background:var(--surface-2); color:var(--muted); cursor:default;}
+.premium-badge{display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; background:linear-gradient(120deg,#c79a4b,#e3c073); color:#3a2c0f; padding:3px 8px 3px 6px; border-radius:100px; margin-left:8px; vertical-align:2px;}
+.premium-badge .icon{width:10px;height:10px;}
+
+/* ---- checkout modal ---- */
+.modal-veil{position:absolute; inset:0; background:rgba(14,22,19,.55); z-index:50; display:flex; align-items:flex-end;}
+.modal-sheet{width:100%; background:var(--surface); border-radius:24px 24px 0 0; padding:22px 22px 26px; animation:sheetUp .28s ease;}
+@keyframes sheetUp{from{transform:translateY(24px); opacity:.4;}to{transform:translateY(0); opacity:1;}}
+.modal-sheet h3{font-family:var(--disp); font-size:16px; margin:0 0 2px;}
+.modal-sheet .msub{font-size:11.5px; color:var(--muted); margin-bottom:16px;}
+.pay-row{display:flex; gap:8px;}
+.pay-row .mini-form{flex:1; padding:0;}
+.modal-sheet input{width:100%; font-family:var(--mono); font-size:12.5px; padding:11px 12px; border-radius:11px; border:1px solid var(--line); background:var(--surface-2); outline:none; margin-bottom:9px;}
+.modal-sheet input:focus{border-color:var(--primary);}
+.pay-total{display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-top:1px solid var(--line); margin:6px 0 14px; font-size:13px;}
+.pay-total b{font-family:var(--disp); font-size:16px;}
+.modal-actions{display:flex; gap:8px;}
+.modal-actions button{flex:1; padding:13px; border-radius:12px; border:1px solid var(--line); background:var(--surface); font-family:var(--body); font-weight:600; font-size:13px; cursor:pointer; color:var(--ink);}
+.modal-actions .pay-confirm{background:var(--primary); border-color:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; gap:6px;}
+.modal-actions .pay-confirm:disabled{opacity:.55; cursor:not-allowed;}
+.lock-note{display:flex; align-items:center; gap:6px; justify-content:center; font-size:10.5px; color:var(--muted-2); margin-top:12px; font-family:var(--mono);}
+.pay-success{text-align:center; padding:10px 4px 4px;}
+.pay-success .ok-ring{width:60px; height:60px; border-radius:50%; background:var(--primary-tint); display:flex; align-items:center; justify-content:center; margin:0 auto 14px;}
+.pay-success .ok-ring .icon{width:26px; height:26px; color:var(--primary);}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+<defs>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z"/><path d="M9 12l2 2 4-4"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></symbol>
+<symbol id="i-sos" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15 20c0-2.4 1-4.3 2.6-5.4"/></symbol>
+<symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 6V3M15 6V3M9 21v-3M15 21v-3M6 9H3M6 15H3M21 9h-3M21 15h-3"/></symbol>
+<symbol id="i-battery" viewBox="0 0 24 24"><rect x="2" y="8" width="17" height="9" rx="2"/><path d="M21 11v3"/><path d="M6 12h2M9 10v4"/></symbol>
+<symbol id="i-signal" viewBox="0 0 24 24"><path d="M4 20v-4M9 20v-8M14 20V8M19 20V4"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-7.4 7-12.5A7 7 0 0 0 5 9.5C5 14.6 12 22 12 22Z"/><circle cx="12" cy="9.5" r="2.4"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></symbol>
+<symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="6" width="13" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l1.5 4.5L8 10.5a12 12 0 0 0 5.5 5.5l1.9-2.5L20 15v4a2 2 0 0 1-2.2 2C9.3 20.4 3.6 14.7 3 6.2A2 2 0 0 1 5 4Z"/></symbol>
+<symbol id="i-ambulance" viewBox="0 0 24 24"><rect x="2" y="8" width="14" height="9" rx="1.5"/><path d="M16 11h3l3 3v3h-6z"/><circle cx="7" cy="19" r="1.6"/><circle cx="17.5" cy="19" r="1.6"/><path d="M7 10v4M5 12h4"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 10v5"/><circle cx="12" cy="17.5" r="0.6" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-satellite" viewBox="0 0 24 24"><path d="M4 13a9 9 0 0 1 9-9"/><path d="M4 13a5 5 0 0 0 5 5"/><rect x="14" y="3" width="7" height="7" rx="1" transform="rotate(45 17.5 6.5)"/><path d="M9 15l-3 3"/><circle cx="4" cy="20" r="1.3"/></symbol>
+<symbol id="i-gauge" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 13 16 9"/><path d="M12 5v1M5 13h1M19 13h-1"/></symbol>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M4 16V11l2-5h12l2 5v5"/><path d="M2 16h20"/><circle cx="7" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/></symbol>
+<symbol id="i-bike" viewBox="0 0 24 24"><circle cx="5.5" cy="17" r="3.3"/><circle cx="18.5" cy="17" r="3.3"/><path d="M5.5 17 10 8h5l3.5 9"/><path d="M10 8H8M12 8l3 5"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3M9 21h6"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19.5 8.5a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 16v4Z"/><path d="M13.5 6.5 17.5 10.5"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4Z"/></symbol>
+<symbol id="i-apple" viewBox="0 0 24 24"><path d="M16.4 12.9c0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.6.8-3.3.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.7Z"/><path d="M13.7 5.6c.6-.8 1-1.9.9-3-1 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-.9 2.9 1.1.1 2.2-.6 2.8-1.3Z"/></symbol>
+<symbol id="i-android" viewBox="0 0 24 24"><path d="M6 10v6"/><path d="M18 10v6"/><path d="M7 9h10v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9Z"/><path d="M9 9c0-2 1.3-3.5 3-3.5S15 7 15 9"/><circle cx="9.7" cy="7.4" r=".4" fill="currentColor" stroke="none"/><circle cx="14.3" cy="7.4" r=".4" fill="currentColor" stroke="none"/><path d="M10 19v2M14 19v2"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8Z"/><circle cx="12" cy="13.5" r="3.4"/></symbol>
+<symbol id="i-crown" viewBox="0 0 24 24"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5L3 8Z"/><path d="M5 21h14"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></symbol>
+<symbol id="i-family" viewBox="0 0 24 24"><circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M2 20c0-3 2.2-5.4 5-5.4S12 17 12 20"/><path d="M12 20c0-3 2.2-5.4 5-5.4S22 17 22 20"/></symbol>
+</defs>
+</svg>
+
+<div class="stage">
+  <div class="hook">
+    <div class="hook-line">The Crash Didn't Call. <span>We Did.</span></div>
+    <div class="hook-stats">
+      <div class="hstat"><b>1.77L</b><span>road deaths in India, 2024</span></div>
+      <div class="hdiv"></div>
+      <div class="hstat"><b>~20</b><span>lives lost every hour</span></div>
+      <div class="hdiv"></div>
+      <div class="hstat"><b>64,772</b><span>deaths on highways alone</span></div>
+    </div>
+    <div class="trend-card">
+      <div class="trend-top">
+        <div class="t-label-wrap">
+          <div class="t-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+          <span class="t-label">India road deaths · 6-yr trend</span>
+        </div>
+        <div class="t-figure"><b>+14%</b><span>since 2021</span></div>
+      </div>
+      <div class="trend-bars">
+        <div class="tbar-col"><span class="tval">1.55L</span><div class="tbar-track"><div class="tbar" style="height:63%"></div></div><span class="tyear">'21</span></div>
+        <div class="tbar-col"><span class="tval">1.68L</span><div class="tbar-track"><div class="tbar" style="height:76%"></div></div><span class="tyear">'22</span></div>
+        <div class="tbar-col"><span class="tval">1.72L</span><div class="tbar-track"><div class="tbar" style="height:82%"></div></div><span class="tyear">'23</span></div>
+        <div class="tbar-col is-peak"><span class="tval">1.77L</span><div class="tbar-track"><div class="tbar" style="height:90%"></div></div><span class="tyear">'24</span></div>
+        <div class="tbar-col is-est"><span class="tval">~1.79L</span><div class="tbar-track"><div class="tbar" style="height:94%"></div></div><span class="tyear">'25</span></div>
+        <div class="tbar-col is-est"><span class="tval">~1.2L</span><div class="tbar-track"><div class="tbar" style="height:60%"></div></div><span class="tyear">'26</span></div>
+      </div>
+      <div class="gh-callout">
+        <div class="gh-ring">
+          <svg viewBox="0 0 44 44">
+            <circle class="gh-track" cx="22" cy="22" r="18"></circle>
+            <circle class="gh-fill" cx="22" cy="22" r="18"></circle>
+          </svg>
+          <div class="gh-pct">20%</div>
+        </div>
+        <div class="gh-text">
+          <b>Only 1 in 5 reach care within the golden hour</b>
+          <span>Average ambulance response runs 25–35 min — AEGIS alerts contacts and dispatch in seconds, not minutes.</span>
+        </div>
+      </div>
+      <div class="trend-foot"><span class="dot-est"></span>2025 provisional · 2026 YTD, projected from Jan–Jul pace — full-year MoRTH figures publish next year<span class="src">Sources: MoRTH "Road Accidents in India" annual reports · NCRB</span></div>
+    </div>
+    <div class="hook-sub">Most are lost to the silence after impact — not the impact itself. AEGIS is built to break that silence.</div>
+  </div>
+  <div class="stage-label"><span class="dot"></span> AEGIS COMPANION APP — LIVE DEMO</div>
+  <div class="phone">
+    <div class="screen">
+      <div class="statusbar">
+        <span id="clock">9:41</span>
+        <div class="right">
+          <svg class="icon" style="width:14px;height:14px"><use href="#i-signal"/></svg>
+          <svg class="icon" style="width:14px;height:14px"><use href="#i-battery"/></svg>
+        </div>
+      </div>
+      <div id="header" class="appheader"></div>
+      <div id="content" class="content"></div>
+      <div id="demoTag" class="demo-tag" style="display:none;"><span class="dot"></span>Guided demo</div>
+      <div id="demoBanner"></div>
+      <div class="tabbar">
+        <button class="tab" data-tab="home"><svg class="icon"><use href="#i-home"/></svg>Home</button>
+        <button class="tab" data-tab="map"><svg class="icon"><use href="#i-map"/></svg>Map</button>
+        <button class="tab" data-tab="sos"><svg class="icon"><use href="#i-sos"/></svg>SOS</button>
+        <button class="tab" data-tab="contacts"><svg class="icon"><use href="#i-users"/></svg>Contacts</button>
+        <button class="tab" data-tab="device"><svg class="icon"><use href="#i-chip"/></svg>Device</button>
+        <button class="tab" data-tab="plans"><svg class="icon"><use href="#i-crown"/></svg>Plans</button>
+      </div>
+    </div>
+  </div>
+  <div class="caption">Tap around like a real app — Home, Map, SOS, Contacts, Device, Plans. Open <b>Home</b> and press <b>Watch full demo</b> to see the whole crash-to-ambulance loop run itself, start to finish. Try a real crash simulation from the <b>SOS</b> tab — it uses your device's vibration, sound and notifications.</div>
+  <div class="badges">
+    <div class="badge"><svg class="icon"><use href="#i-apple"/></svg><div class="bl"><span>Coming to</span><b>App Store</b></div></div>
+    <div class="badge"><svg class="icon"><use href="#i-android"/></svg><div class="bl"><span>Coming to</span><b>Google Play</b></div></div>
+  </div>
+</div>
+
+<script>
+const header = document.getElementById('header');
+const content = document.getElementById('content');
+const tabs = document.querySelectorAll('.tab');
+let sosTimer = null;
+let installType = 'bike';
+let silentMode = false;
+
+/* ---------------- editable state ---------------- */
+let contacts = [
+  {n:'Aditi Sharma', r:'Spouse · primary', i:'AS'},
+  {n:'Rohan Sharma', r:'Brother', i:'RS'},
+  {n:'Dr. Mehta Clinic', r:'Family physician', i:'DM'}
+];
+let settings = { confirmSec: 10, gapSec: 5 };
+let subscriptionTier = 'free';   // free | plus | family
+let billingCycle = 'monthly';    // monthly | yearly
+let checkoutTarget = null;       // plan being purchased in modal
+let activityLog = [
+  {icon:'i-check', label:'Guardian armed', time:'Today · 07:42'},
+  {icon:'i-battery', label:'Fully charged overnight', time:'Today · 06:10'},
+  {icon:'i-pin', label:'Left home geofence', time:'Today · 07:41'}
+];
+
+/* ---------------- device-level realism: vibration / sound / notifications ---------------- */
+function buzz(pattern){
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+}
+let audioCtx = null;
+function playTone(freq=880, dur=180){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type='sine'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur/1000);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime+dur/1000+0.02);
+  }catch(e){}
+}
+function alarmPattern(){ playTone(880,140); setTimeout(()=>playTone(660,140),200); setTimeout(()=>playTone(880,140),400); }
+function dispatchChime(){ playTone(523,160); setTimeout(()=>playTone(659,160),170); setTimeout(()=>playTone(784,260),340); }
+function askNotifyPermission(){
+  try{
+    if('Notification' in window && Notification.permission==='default'){
+      Notification.requestPermission();
+    }
+  }catch(e){}
+}
+function notify(title, body){
+  try{
+    if('Notification' in window && Notification.permission==='granted'){
+      new Notification(title, {body, icon:''});
+    }
+  }catch(e){}
+}
+
+function showToast(text){
+  const screen = document.querySelector('.screen');
+  if(!screen) return;
+  screen.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<svg class="icon"><use href="#i-check"/></svg><span>${text}</span>`;
+  screen.appendChild(t);
+  setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(), 250); }, 2400);
+}
+
+/* ---------------- live location ---------------- */
+let liveLoc = null;        // {lat, lon, accuracy, address}
+let geoState = 'idle';     // idle | requesting | granted | denied | unsupported
+let geoWatchId = null;
+let currentMapRender = null; // re-invoked as live position updates
+
+function fmtCoord(v, posLabel, negLabel){
+  const dir = v >= 0 ? posLabel : negLabel;
+  return `${Math.abs(v).toFixed(3)}°${dir}`;
+}
+function locCoordText(){
+  if(liveLoc) return `${fmtCoord(liveLoc.lat,'N','S')}, ${fmtCoord(liveLoc.lon,'E','W')}`;
+  return '19.198°N, 72.970°E';
+}
+function locAccuracyText(){
+  if(liveLoc && liveLoc.accuracy) return `±${Math.round(liveLoc.accuracy)}m accuracy`;
+  return '±3m accuracy';
+}
+function locAddressText(){
+  if(liveLoc) return liveLoc.address || 'Your live position';
+  return 'Eastern Express Highway, Thane';
+}
+async function reverseGeocode(lat, lon){
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=16`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    const a = data.address || {};
+    const line = a.road || a.suburb || a.neighbourhood || a.village || a.town || a.city_district || '';
+    const city = a.city || a.town || a.county || '';
+    return [line, city].filter(Boolean).join(', ') || data.display_name || null;
+  }catch(e){ return null; }
+}
+function enableLiveLocation(){
+  if(geoState==='requesting' || geoState==='granted') return;
+  const secureOK = window.isSecureContext && !!navigator.geolocation;
+  if(!secureOK){ geoState='unsupported'; if(currentMapRender) currentMapRender(); return; }
+  geoState = 'requesting';
+  if(currentMapRender) currentMapRender();
+  geoWatchId = navigator.geolocation.watchPosition(
+    (pos)=>{
+      geoState = 'granted';
+      liveLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy, address: liveLoc?.address };
+      if(currentMapRender) currentMapRender();
+      reverseGeocode(liveLoc.lat, liveLoc.lon).then(addr=>{
+        if(addr && liveLoc){ liveLoc.address = addr; if(currentMapRender) currentMapRender(); }
+      });
+    },
+    ()=>{ geoState = 'denied'; if(currentMapRender) currentMapRender(); },
+    { enableHighAccuracy:true, maximumAge:5000, timeout:10000 }
+  );
+}
+function disableLiveLocation(){
+  if(geoWatchId!==null){ navigator.geolocation.clearWatch(geoWatchId); geoWatchId=null; }
+  geoState = 'idle'; liveLoc = null;
+  if(currentMapRender) currentMapRender();
+}
+
+/* ---------------- camera ---------------- */
+let cameraStream = null;
+let camState = 'idle'; // idle | requesting | granted | denied
+let currentSosRender = null; // re-invoked once camera permission resolves
+
+function kickCamera(){
+  if(camState==='granted' || camState==='requesting') return;
+  if(demoActive){ camState='simulated'; if(currentSosRender) currentSosRender(); return; }
+  const secureOK = window.isSecureContext && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  if(!secureOK){ camState='unsupported'; if(currentSosRender) currentSosRender(); return; }
+  camState = 'requesting';
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}, audio:true})
+    .then(stream=>{ cameraStream = stream; camState = 'granted'; if(currentSosRender) currentSosRender(); })
+    .catch(()=>{ camState = 'denied'; if(currentSosRender) currentSosRender(); });
+}
+function captureFrame(){
+  const v = document.getElementById('camVideo');
+  if(!v || !v.videoWidth) return null;
+  try{
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',0.85);
+  }catch(e){ return null; }
+}
+function liveFeedHTML(resTag){
+  if(camState==='granted' && cameraStream){
+    return `<div class="live"><span class="d"></span>LIVE</div><video id="camVideo" autoplay muted playsinline></video>`;
+  }
+  if(camState==='simulated'){
+    return `<div class="live"><span class="d"></span>LIVE</div><div class="camprompt" style="color:#7c9990;"><svg class="icon" style="width:22px;height:22px"><use href="#i-video"/></svg>Demo preview — ${resTag} stream<span style="font-size:10px;">Real device camera streams here on an actual crash</span></div>`;
+  }
+  if(camState==='unsupported'){
+    return `<div class="camprompt"><svg class="icon" style="width:22px;height:22px"><use href="#i-camera"/></svg>Camera needs a secure (https) connection<span style="font-size:10px;">Open this from your hosted link, not a local file — sending GPS only for now</span></div>`;
+  }
+  if(camState==='denied'){
+    return `<div class="camprompt"><svg class="icon" style="width:22px;height:22px"><use href="#i-camera"/></svg>Camera access denied — sending GPS location only<button id="btnCamRetry">Grant camera access</button></div>`;
+  }
+  return `<div class="camprompt"><svg class="icon" style="width:22px;height:22px"><use href="#i-camera"/></svg>Turning on device camera…<span style="font-size:10px;">${resTag} stream starting</span></div>`;
+}
+function mountLiveFeed(){
+  const v = document.getElementById('camVideo');
+  if(v && cameraStream){ v.srcObject = cameraStream; }
+  const retry = document.getElementById('btnCamRetry');
+  if(retry) retry.onclick = ()=>{ camState='idle'; kickCamera(); };
+  if(camState==='idle') kickCamera();
+}
+
+function setActiveTab(name){
+  tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+}
+
+tabs.forEach(t=>t.addEventListener('click', ()=>{ if(demoActive) endDemo(); render(t.dataset.tab); }));
+
+/* ---------------- guided demo ---------------- */
+let demoActive = false;
+let demoTimers = [];
+
+function showDemoBanner(text){
+  const b = document.getElementById('demoBanner');
+  if(!b) return;
+  b.innerHTML = `<div class="demo-banner"><svg class="icon"><use href="#i-play"/></svg><div>${text}</div><button class="exit" id="demoExit">EXIT ✕</button></div>`;
+  const ex = document.getElementById('demoExit');
+  if(ex) ex.onclick = endDemo;
+}
+function clearDemoBanner(){ const b=document.getElementById('demoBanner'); if(b) b.innerHTML=''; }
+function clearDemoTimers(){ demoTimers.forEach(t=>clearTimeout(t)); demoTimers=[]; }
+
+function startDemo(){
+  demoActive = true;
+  clearDemoTimers();
+  document.getElementById('demoTag').style.display='flex';
+  render('home');
+  showDemoBanner("The Golden Hour is often lost after a crash — not to the impact, but to the silence after it. Here's the whole loop, running by itself.");
+  const at = (ms, fn)=>demoTimers.push(setTimeout(fn, ms));
+  const confirmMs = settings.confirmSec*1000, gapMs = settings.gapSec*1000;
+
+  at(3200, ()=>{ render('map'); showDemoBanner('Live location and trail — always ready to share, even before any alert.'); });
+  at(7200, ()=>{ render('sos'); showDemoBanner('This is the SOS tab. Watch what happens the instant a crash is sensed.'); });
+  at(10200, ()=>{ document.getElementById('btnSim')?.click(); showDemoBanner(`Impact detected. A ${settings.confirmSec}s window opens to confirm you're okay.`); });
+
+  let t = 10200 + confirmMs;
+  at(t+700, ()=>showDemoBanner('No response — Contact 1 is alerted automatically with live video and your exact location.'));
+  t += gapMs;
+  at(t+1200, ()=>showDemoBanner('Still silent. Contact 2 and local emergency (112) are looped in next.'));
+  t += gapMs;
+  at(t+1600, ()=>showDemoBanner("Nobody's responded. AEGIS calls the ambulance directly — it doesn't keep waiting on people."));
+  t += 2200;
+  at(t+800, ()=>showDemoBanner('Ambulance dispatched. Everyone now has the live footage, a photo and exact coordinates.'));
+  at(t+5200, ()=>showDemoBanner('That entire loop runs on its own, start to finish — fully automatic, on iOS and Android.'));
+  at(t+9500, ()=>{ render('plans'); showDemoBanner('AEGIS Plus and Family unlock live video, more contacts and 24/7 human backup.'); });
+  at(t+13500, endDemo);
+}
+
+function endDemo(){
+  demoActive = false;
+  clearDemoTimers();
+  clearInterval(sosTimer); sosTimer=null;
+  const tag = document.getElementById('demoTag'); if(tag) tag.style.display='none';
+  clearDemoBanner();
+  render('home');
+}
+
+function stopCamera(){
+  if(cameraStream){ cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; }
+  camState='idle';
+}
+
+function render(tab){
+  setActiveTab(tab);
+  clearInterval(sosTimer); sosTimer=null;
+  currentSosRender = null;
+  if(tab!=='sos') stopCamera();
+  if(tab==='home') renderHome();
+  else if(tab==='map') renderMap();
+  else if(tab==='sos') renderSosIdle();
+  else if(tab==='contacts') renderContacts();
+  else if(tab==='device') renderDevice();
+  else if(tab==='plans') renderPlans();
+}
+
+/* ---------------- HOME ---------------- */
+function renderHome(){
+  header.innerHTML = `<div class="eyebrow">Good afternoon</div><h1>Your ride is protected${subscriptionTier!=='free' ? `<span class="premium-badge"><svg class="icon"><use href="#i-crown"/></svg>${subscriptionTier==='family'?'Family':'Plus'}</span>` : ''}</h1>`;
+  content.innerHTML = `
+    <div class="guardian">
+      <div class="ring"><div class="breathe"><svg class="icon"><use href="#i-shield"/></svg><b>Guardian On</b></div></div>
+      <div class="g-status">Watching, quietly</div>
+      <div class="g-sub">No unusual motion in the last 6 hours</div>
+    </div>
+    <div class="stat3">
+      <div class="card"><svg class="icon"><use href="#i-battery"/></svg><b>92%</b><span>Battery</span></div>
+      <div class="card"><svg class="icon"><use href="#i-signal"/></svg><b>4G</b><span>Strong</span></div>
+      <div class="card"><svg class="icon"><use href="#i-users"/></svg><b id="statContacts">${contacts.length}/${contactLimit()}</b><span>Contacts</span></div>
+    </div>
+    <button class="safe-btn" id="btnSafe"><svg class="icon" style="width:16px;height:16px"><use href="#i-check"/></svg>Send "I'm safe" to family</button>
+    <button class="demo-fab" id="btnWatchDemo"><svg class="icon" style="width:16px;height:16px"><use href="#i-play"/></svg>Watch full demo — impact to ambulance</button>
+
+    <div class="section-title">Why AEGIS exists</div>
+    ${renderAccidentStats()}
+
+    <div class="section-title">Recent activity</div>
+    <div class="card">
+      ${activityLog.map(a=>`<div class="activity"><svg class="icon"><use href="#${a.icon}"/></svg><div><b>${a.label}</b><span>${a.time}</span></div></div>`).join('')}
+    </div>
+  `;
+  document.getElementById('btnWatchDemo').onclick = startDemo;
+  document.getElementById('btnSafe').onclick = sendSafeMessage;
+}
+
+/* ---------------- ACCIDENT DATA (India, last 5 years — MoRTH) ---------------- */
+const accidentStats = {
+  source: 'MoRTH · 2021–24',
+  years: [
+    { y:'2021', accidents:412432, deaths:153972 },
+    { y:'2022', accidents:461312, deaths:168491 },
+    { y:'2023', accidents:480583, deaths:172890 },
+    { y:'2024', accidents:487707, deaths:177175 }
+  ],
+  dailyDeaths: 485,
+  dailyAccidents: 1336,
+  twoWheelerShareOfDeaths: 45,
+  helmetlessDeaths2023: 54568,
+  goldenHourNote: 'Most road deaths happen in the "golden hour" — the first 60 minutes after a crash, when fast alerting and quick medical response matter most.'
+};
+
+function renderAccidentStats(){
+  const maxAcc = Math.max(...accidentStats.years.map(r=>r.accidents));
+  const bars = accidentStats.years.map(r=>{
+    const pct = Math.round((r.accidents/maxAcc)*100);
+    return `<div class="sbar-row">
+      <span class="syear">${r.y}</span>
+      <div class="sbar-track"><div class="sbar-fill" style="width:${pct}%"></div></div>
+      <span class="sval">${(r.accidents/1000).toFixed(0)}k</span>
+    </div>`;
+  }).join('');
+  return `
+    <div class="stats-card">
+      <div class="stats-head">
+        <div><div class="eyebrow2">India · road accidents</div><h3>A death every ~3 minutes</h3></div>
+        <span class="stats-src">${accidentStats.source}</span>
+      </div>
+      <div class="stats-grid">
+        <div class="sbox"><b>${accidentStats.dailyDeaths}</b><span>Lives lost per day, nationally</span></div>
+        <div class="sbox"><b>${accidentStats.dailyAccidents}</b><span>Accidents per day, nationally</span></div>
+        <div class="sbox"><b>${accidentStats.twoWheelerShareOfDeaths}%</b><span>Of deaths are two-wheeler riders</span></div>
+      </div>
+      <div class="stats-bars">
+        ${bars}
+      </div>
+      <div class="stats-foot">
+        <svg class="icon"><use href="#i-clock"/></svg>
+        <p>${accidentStats.goldenHourNote} AEGIS is built to close that gap.</p>
+      </div>
+    </div>
+    <div class="stats-split">
+      <div class="split-box"><svg class="icon"><use href="#i-bike"/></svg><b>${accidentStats.twoWheelerShareOfDeaths}%</b><span>Two-wheeler deaths</span></div>
+      <div class="split-box"><svg class="icon"><use href="#i-warn"/></svg><b>${(accidentStats.helmetlessDeaths2023/1000).toFixed(0)}k+</b><span>Killed without a helmet (2023)</span></div>
+      <div class="split-box"><svg class="icon"><use href="#i-car"/></svg><b>2005→24</b><span>Crash severity up every year since</span></div>
+    </div>
+  `;
+}
+
+function sendSafeMessage(){
+  const btn = document.getElementById('btnSafe');
+  if(!btn || btn.disabled) return;
+  if(contacts.length===0){
+    showToast("Add a contact first — see the Contacts tab");
+    return;
+  }
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  btn.innerHTML = `<svg class="icon" style="width:16px;height:16px"><use href="#i-clock"/></svg>Sending…`;
+  setTimeout(()=>{
+    const names = contacts.map(c=>c.n.split(' ')[0]).join(', ');
+    activityLog.unshift({icon:'i-check', label:`"I'm safe" sent to ${contacts.length} contact${contacts.length===1?'':'s'}`, time:'Just now'});
+    showToast(`Sent to ${names}`);
+    if(document.getElementById('btnSafe')) renderHome();
+  }, 650);
+}
+
+/* ---------------- MAP ---------------- */
+function renderMap(){
+  currentMapRender = renderMap;
+  const isLive = geoState==='granted' && liveLoc;
+  header.innerHTML = `<div class="eyebrow">${isLive ? 'Live GPS — real device location' : 'Live location'}</div><h1>On the move</h1>`;
+  content.innerHTML = `
+    <div class="map-box">
+      <svg viewBox="0 0 300 230" preserveAspectRatio="none">
+        <rect width="300" height="230" fill="#f2f6f4"/>
+        <path d="M0 60 H300 M0 130 H300 M0 185 H300" stroke="#dfe8e3" stroke-width="6"/>
+        <path d="M60 0 V230 M150 0 V230 M230 0 V230" stroke="#dfe8e3" stroke-width="6"/>
+        <path d="M0 100 Q150 40 300 110" stroke="#c8dbd3" stroke-width="10" fill="none"/>
+      </svg>
+      ${isLive ? `<div class="live" style="position:absolute; top:10px; left:10px;"><span class="d"></span>LIVE GPS</div>` : ''}
+      <div class="map-pin"><div class="pulse"></div><div class="dot2"></div></div>
+    </div>
+    <div class="section-title">Current position</div>
+    <div class="card addr-card">
+      <svg class="icon"><use href="#i-pin"/></svg>
+      <div><b>${locAddressText()}</b><span class="coord">${locCoordText()} · ${locAccuracyText()}</span></div>
+    </div>
+    ${geoLocCard()}
+    <div class="section-title">Trail</div>
+    <div class="card">
+      <div class="row" style="padding:6px 0;"><span class="muted">Last 15 min</span><span class="pill">Moving · 42 km/h</span></div>
+      <div class="row" style="padding:6px 0;"><span class="muted">Route logged since</span><span class="muted" style="font-family:var(--mono)">07:41</span></div>
+    </div>
+  `;
+  const btn = document.getElementById('btnLiveLoc');
+  if(btn) btn.onclick = ()=>{ isLive ? disableLiveLocation() : enableLiveLocation(); };
+  const retry = document.getElementById('btnGeoRetry');
+  if(retry) retry.onclick = ()=>{ geoState='idle'; enableLiveLocation(); };
+}
+
+function geoLocCard(){
+  if(geoState==='granted'){
+    return `<button class="demo-fab" id="btnLiveLoc" style="border-style:solid;"><svg class="icon" style="width:16px;height:16px"><use href="#i-pin"/></svg>Live GPS on — tap to stop sharing</button>`;
+  }
+  if(geoState==='requesting'){
+    return `<div class="calm-note"><svg class="icon"><use href="#i-pin"/></svg><p>Requesting your device's location… allow the permission prompt to turn on live GPS.</p></div>`;
+  }
+  if(geoState==='denied'){
+    return `<div class="calm-note" style="background:var(--alert-tint);"><svg class="icon" style="color:#a24b32;"><use href="#i-warn"/></svg><p style="color:#a24b32;">Location permission denied — showing the demo position instead. <span id="btnGeoRetry" style="text-decoration:underline; cursor:pointer;">Try again</span></p></div>`;
+  }
+  if(geoState==='unsupported'){
+    return `<div class="calm-note"><svg class="icon"><use href="#i-pin"/></svg><p>Live GPS needs a secure (https) connection — open this from your hosted link to enable it. Showing the demo position for now.</p></div>`;
+  }
+  return `<button class="demo-fab" id="btnLiveLoc"><svg class="icon" style="width:16px;height:16px"><use href="#i-pin"/></svg>Use my real location</button>`;
+}
+
+/* ---------------- SOS ---------------- */
+function renderSosIdle(){
+  header.innerHTML = `<div class="eyebrow">Crash response</div><h1>All calm</h1>`;
+  content.innerHTML = `
+    <div class="card" style="text-align:center; padding:26px 18px;">
+      <svg class="icon" style="width:26px;height:26px;color:var(--primary);margin-bottom:10px;"><use href="#i-shield"/></svg>
+      <div style="font-family:var(--disp); font-weight:600; font-size:14px;">No alerts triggered</div>
+      <div class="muted" style="margin-top:4px;">Sensors are reading normal vibration only</div>
+    </div>
+    <div class="section-title">Try the response flow</div>
+    <p class="muted" style="margin-top:-4px;">This walks through exactly what happens on impact — detection, confirmation, live alert, and escalation.</p>
+    <button class="sos-btn" id="btnSim"><svg class="icon" style="width:17px;height:17px"><use href="#i-bolt"/></svg>Simulate a crash</button>
+    <div class="calm-note"><svg class="icon"><use href="#i-check"/></svg><p>Nothing is ever sent without a confirmed impact or a manual SOS press — false alarms don't reach your contacts.</p></div>
+  `;
+  document.getElementById('btnSim').onclick = renderSosImpact;
+}
+
+function renderSosImpact(){
+  currentSosRender = renderSosImpact;
+  kickCamera();
+  askNotifyPermission();
+  buzz([180,90,180,90,180]);
+  alarmPattern();
+  header.innerHTML = `<div class="eyebrow">Impact detected</div><h1>Are you okay?</h1>`;
+  content.innerHTML = `
+    <div class="countdown-ring"><b id="cdNum">${settings.confirmSec}</b></div>
+    <p class="muted" style="text-align:center;">Confirming before anything is sent — automatic in ${settings.confirmSec}s</p>
+    <div class="reason-box">
+      <div class="reason-head"><svg class="icon" style="width:13px;height:13px"><use href="#i-gauge"/></svg>Detection signature</div>
+      <div class="reason-row"><span>Deceleration</span><b>4.6g in 140ms</b></div>
+      <div class="reason-row"><span>Orientation change</span><b>52° roll</b></div>
+      <div class="reason-row"><span>Post-impact motion</span><b>none for 3s</b></div>
+      <div class="reason-conf"><span>Crash confidence</span><b>94%</b></div>
+    </div>
+    <div class="two-btn">
+      <button id="btnOk"><svg class="icon" style="width:15px;height:15px"><use href="#i-check"/></svg>I'm OK</button>
+      <button class="primary" id="btnSOS"><svg class="icon" style="width:15px;height:15px"><use href="#i-sos"/></svg>Send SOS now</button>
+    </div>
+    <div class="breathe-note">Take a breath. If you don't cancel, AEGIS reaches out for you — automatically, no taps needed.</div>
+  `;
+  document.getElementById('btnOk').onclick = ()=>{ clearInterval(sosTimer); render('sos'); };
+  document.getElementById('btnSOS').onclick = ()=>{ clearInterval(sosTimer); renderSosAlert(true); };
+  let n=settings.confirmSec;
+  const el = document.getElementById('cdNum');
+  clearInterval(sosTimer);
+  sosTimer = setInterval(()=>{
+    n--; if(el) el.textContent = Math.max(n,0);
+    if(n<=0){ clearInterval(sosTimer); renderSosAlert(false); }
+  },1000);
+}
+
+function escalationTrack(activeIdx, extra){
+  const c1 = contacts[0]?.n.split(' ')[0] || 'Contact 1';
+  const c2 = contacts[1]?.n.split(' ')[0] || 'Contact 2';
+  const steps = [
+    {label:`${c1} notified`, sub:'primary contact · just now'},
+    {label:`${c2} + Local 112`, sub:`escalates if silent ${settings.gapSec}s`},
+    {label:'Hospital & ambulance', sub:'direct call if still silent'}
+  ];
+  return `<div class="esc-track">${steps.map((s,i)=>{
+    const cls = i<activeIdx ? 'done' : (i===activeIdx ? 'active' : '');
+    const ic = i<activeIdx ? 'i-check' : (i===2?'i-ambulance': i===1?'i-phone':'i-clock');
+    return `<div class="esc-step ${cls}"><div class="esc-dot"><svg class="icon"><use href="#${ic}"/></svg></div><div><b>${s.label}</b><span>${i===activeIdx && extra ? extra : s.sub}</span></div></div>`;
+  }).join('')}</div>`;
+}
+
+function renderSosAlert(manual){
+  currentSosRender = ()=>renderSosAlert(manual);
+  buzz([300]);
+  notify('AEGIS · Alert sent', `${contacts[0]?.n||'Primary contact'} has been notified with your live location.`);
+  header.innerHTML = `<div class="eyebrow">Alert sent${manual?' · manual':''}</div><h1>Help is being notified</h1>`;
+  content.innerHTML = `
+    <div class="video-frame">${liveFeedHTML('240p')}</div>
+    <div class="card" style="margin-top:12px;">
+      <div class="row" style="padding:5px 0;"><span class="muted">Location</span><span class="coord">${locCoordText()}</span></div>
+      <div class="row" style="padding:5px 0;"><span class="muted">Sent to</span><span style="font-size:12.5px;">${contacts[0]?.n.split(' ')[0] || 'Contact 1'}</span></div>
+    </div>
+    <div class="section-title">Escalation — fully automatic</div>
+    ${escalationTrack(1, `no response in ${settings.gapSec}s → escalates`)}
+    <button class="cancel-link" id="btnCancel"><svg class="icon" style="width:14px;height:14px"><use href="#i-check"/></svg>I'm safe now — cancel alert</button>
+  `;
+  mountLiveFeed();
+  document.getElementById('btnCancel').onclick = ()=>{ clearInterval(sosTimer); render('sos'); };
+  clearInterval(sosTimer);
+  let n=settings.gapSec;
+  sosTimer = setInterval(()=>{
+    n--;
+    if(n<=0){ clearInterval(sosTimer); renderSosEscalate(); }
+  },1000);
+}
+
+function renderSosEscalate(){
+  currentSosRender = renderSosEscalate;
+  buzz([300,120,300]);
+  notify('AEGIS · Escalating', `${contacts[1]?.n||'Contact 2'} and Local 112 are being contacted now.`);
+  header.innerHTML = `<div class="eyebrow">Escalating</div><h1>Widening the call</h1>`;
+  content.innerHTML = `
+    <div class="video-frame">${liveFeedHTML('480p')}</div>
+    <div class="card" style="margin-top:12px;">
+      <div class="row" style="padding:5px 0;"><span class="muted">Now notifying</span><span style="font-size:12.5px;">${contacts[1]?.n.split(' ')[0] || 'Contact 2'} + Local 112</span></div>
+      <div class="row" style="padding:5px 0;"><span class="muted">Ambulance</span><span class="pill alert">Standing by</span></div>
+    </div>
+    <div class="section-title">Escalation — fully automatic</div>
+    ${escalationTrack(2, `still silent → direct call in ${settings.gapSec}s`)}
+    <button class="cancel-link" id="btnCancel"><svg class="icon" style="width:14px;height:14px"><use href="#i-check"/></svg>I'm safe now — cancel alert</button>
+  `;
+  mountLiveFeed();
+  document.getElementById('btnCancel').onclick = ()=>{ clearInterval(sosTimer); render('sos'); };
+  clearInterval(sosTimer);
+  let n=settings.gapSec;
+  sosTimer = setInterval(()=>{
+    n--;
+    if(n<=0){ clearInterval(sosTimer); renderSosCalling(); }
+  },1000);
+}
+
+function renderSosCalling(){
+  currentSosRender = renderSosCalling;
+  buzz([500]);
+  notify('AEGIS · Calling 108', 'No response from contacts — ambulance is being dialed directly.');
+  header.innerHTML = `<div class="eyebrow">No response from either contact</div><h1>Calling for help</h1>`;
+  content.innerHTML = `
+    <div class="calling-wrap">
+      <div class="calling-ring"><svg class="icon"><use href="#i-ambulance"/></svg></div>
+      <b>Dialing 108 · Ambulance</b>
+      <span>direct call in progress…</span>
+    </div>
+    <div class="calm-note"><svg class="icon"><use href="#i-video"/></svg><p>Live video, a photo capture and your exact coordinates are attached to this call automatically.</p></div>
+  `;
+  clearInterval(sosTimer);
+  sosTimer = setTimeout(renderSosFinal, 2200);
+}
+
+function renderSosFinal(){
+  currentSosRender = renderSosFinal;
+  buzz([120,60,120,60,300]);
+  dispatchChime();
+  notify('AEGIS · Ambulance dispatched', 'Help is on the way. ETA 8 minutes.');
+  const snap = captureFrame();
+  header.innerHTML = `<div class="eyebrow">On the way</div><h1>Ambulance dispatched</h1>`;
+  content.innerHTML = `
+    <div class="guardian" style="padding-top:6px;">
+      <div class="ring"><div class="breathe" style="border-color:var(--gold);"><svg class="icon" style="color:var(--gold)"><use href="#i-ambulance"/></svg><b>ETA 8 min</b></div></div>
+      <div class="g-status">Everyone's been reached</div>
+      <div class="g-sub">All contacts notified · live feed still active</div>
+    </div>
+    ${snap ? `<div class="section-title">Photo sent to contacts &amp; 108</div><div class="card" style="padding:8px;"><img src="${snap}" style="width:100%;border-radius:10px;display:block;"></div>` : ''}
+    <div class="section-title">Escalation — complete</div>
+    <div class="esc-track">
+      <div class="esc-step done"><div class="esc-dot"><svg class="icon"><use href="#i-check"/></svg></div><div><b>${contacts[0]?.n.split(' ')[0]||'Contact 1'}</b><span>notified</span></div></div>
+      <div class="esc-step done"><div class="esc-dot"><svg class="icon"><use href="#i-check"/></svg></div><div><b>${contacts[1]?.n.split(' ')[0]||'Contact 2'} + 112</b><span>notified</span></div></div>
+      <div class="esc-step done"><div class="esc-dot"><svg class="icon"><use href="#i-check"/></svg></div><div><b>108 Ambulance</b><span>called directly · dispatched</span></div></div>
+    </div>
+    <button class="next-btn" id="btnReset">Reset simulation</button>
+  `;
+  document.getElementById('btnReset').onclick = ()=>render('sos');
+}
+
+/* ---------------- CONTACTS ---------------- */
+let editingIdx = null;
+let addingContact = false;
+
+function contactLimit(){ return subscriptionTier==='free' ? 1 : 5; }
+
+function initials(name){
+  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('') || '??';
+}
+
+function renderContacts(){
+  const limit = contactLimit();
+  const atCap = contacts.length >= limit;
+  header.innerHTML = `<div class="eyebrow">Escalation order · ${settings.gapSec}s each</div><h1>Emergency contacts</h1>`;
+  content.innerHTML = `
+    <p class="muted" style="margin-top:-4px;">If #1 doesn't respond in ${settings.gapSec}s, AEGIS moves to #2. Still nothing? It calls the ambulance directly.</p>
+    <div class="card" id="contactList">
+      ${contacts.map((p,idx)=>`
+        <div class="contact-row">
+          <div class="avatar">${p.i || initials(p.n)}</div>
+          <div class="info"><b>${p.n}</b><span>${p.r}</span></div>
+          <span class="rank">#${idx+1}</span>
+          <div class="edit-actions">
+            <button class="icon-btn" data-edit="${idx}"><svg class="icon"><use href="#i-edit"/></svg></button>
+            <button class="icon-btn danger" data-del="${idx}"><svg class="icon"><use href="#i-trash"/></svg></button>
+          </div>
+        </div>
+        ${editingIdx===idx ? contactForm(p, idx) : ''}
+      `).join('')}
+      ${addingContact ? contactForm({n:'',r:''}, 'new') : (atCap
+          ? `<div class="add-row" id="addRow" style="color:var(--muted-2); cursor:default;"><div class="plus" style="border-color:var(--muted-2);"><svg class="icon" style="width:13px;height:13px"><use href="#i-crown"/></svg></div>${subscriptionTier==='free' ? `Free plan is limited to 1 contact — <span style="color:var(--primary); text-decoration:underline; cursor:pointer;" id="goPlans">upgrade to add more</span>` : `Plan limit reached (${limit})`}</div>`
+          : `<div class="add-row" id="addRow"><div class="plus"><svg class="icon" style="width:13px;height:13px"><use href="#i-plus"/></svg></div>Add a contact</div>`)}
+    </div>
+    <p class="muted" style="margin-top:8px; text-align:right; font-family:var(--mono); font-size:10.5px;">${contacts.length}/${limit} contacts used</p>
+    <div class="section-title">Also alerted automatically</div>
+    <div class="card">
+      <div class="contact-row"><div class="avatar" style="background:var(--alert-tint); color:#a24b32;">108</div><div class="info"><b>Ambulance (108)</b><span>called directly if all contacts stay silent</span></div></div>
+      <div class="contact-row"><div class="avatar" style="background:var(--alert-tint); color:#a24b32;"><svg class="icon" style="width:16px;height:16px"><use href="#i-ambulance"/></svg></div><div class="info"><b>Nearest hospital</b><span>via ambulance dispatch API</span></div></div>
+    </div>
+  `;
+  content.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{ editingIdx = +b.dataset.edit; addingContact=false; renderContacts(); });
+  content.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ contacts.splice(+b.dataset.del,1); editingIdx=null; renderContacts(); });
+  const addRow = document.getElementById('addRow');
+  if(addRow && !atCap) addRow.onclick = ()=>{ addingContact=true; editingIdx=null; renderContacts(); };
+  const goPlans = document.getElementById('goPlans');
+  if(goPlans) goPlans.onclick = (e)=>{ e.stopPropagation(); render('plans'); };
+  wireContactForm();
+}
+
+function contactForm(p, idx){
+  return `
+    <div class="mini-form">
+      <input type="text" id="fName" placeholder="Full name" value="${p.n||''}">
+      <input type="text" id="fRole" placeholder="Relationship (e.g. Sister, Friend)" value="${p.r||''}">
+      <div class="frow">
+        <button class="cancel" id="fCancel">Cancel</button>
+        <button class="save" id="fSave" data-idx="${idx}">Save</button>
+      </div>
+    </div>`;
+}
+function wireContactForm(){
+  const save = document.getElementById('fSave');
+  const cancel = document.getElementById('fCancel');
+  if(cancel) cancel.onclick = ()=>{ editingIdx=null; addingContact=false; renderContacts(); };
+  if(save) save.onclick = ()=>{
+    const n = document.getElementById('fName').value.trim();
+    const r = document.getElementById('fRole').value.trim();
+    if(!n) return;
+    const entry = {n, r: r||'Emergency contact', i: initials(n)};
+    if(save.dataset.idx==='new'){
+      if(contacts.length >= contactLimit()){ editingIdx=null; addingContact=false; renderContacts(); showToast('Contact limit reached for your plan'); return; }
+      contacts.push(entry);
+    }
+    else{ contacts[+save.dataset.idx] = entry; }
+    editingIdx=null; addingContact=false; renderContacts();
+  };
+}
+
+/* ---------------- PLANS / SUBSCRIPTION ---------------- */
+const PLAN_PRICE = {
+  plus:   { monthly: 149, yearly: 1299 },
+  family: { monthly: 299, yearly: 2499 }
+};
+function priceFor(id){
+  if(id==='free') return {amount:0, per:''};
+  const p = PLAN_PRICE[id][billingCycle];
+  return { amount:p, per: billingCycle==='monthly' ? '/mo' : '/yr' };
+}
+function planCardHTML(id, name, tagline, features, reco){
+  const price = priceFor(id);
+  const isCurrent = subscriptionTier===id;
+  return `
+    <div class="plan-card ${reco?'reco':''}">
+      ${reco ? '<span class="reco-tag">Most protected</span>' : ''}
+      <div class="p-head">
+        <div>
+          <div class="p-name">${name}</div>
+          <div class="p-sub">${tagline}</div>
+        </div>
+        <div class="p-price">${price.amount===0 ? 'Free' : '₹'+price.amount}${price.per?`<span>${price.per}</span>`:''}</div>
+      </div>
+      ${features.map(f=>`<div class="plan-feat ${f.off?'off':''}"><svg class="icon"><use href="#${f.off?'i-warn':'i-check'}"/></svg><span>${f.label}</span></div>`).join('')}
+      <button class="plan-btn ${isCurrent?'current':''}" data-plan="${id}" ${isCurrent?'disabled':''}>${isCurrent ? 'Current plan' : (id==='free' ? 'Downgrade' : 'Upgrade — ₹'+price.amount+(price.per||''))}</button>
+    </div>`;
+}
+function renderPlans(){
+  header.innerHTML = `<div class="eyebrow">Subscription</div><h1>Choose your protection</h1>`;
+  content.innerHTML = `
+    <p class="muted" style="margin-top:-4px;">Every plan includes crash detection and manual SOS. Paid plans add more responders, longer live-feed retention, and faster escalation.</p>
+    <div class="plan-toggle">
+      <button id="bMonthly" class="${billingCycle==='monthly'?'active':''}">Monthly</button>
+      <button id="bYearly" class="${billingCycle==='yearly'?'active':''}">Yearly <span class="save-tag">save 27%</span></button>
+    </div>
+    ${planCardHTML('free','Free','Core crash protection',[
+        {label:'Crash &amp; SOS detection'},
+        {label:'1 emergency contact'},
+        {label:`${settings.gapSec}s escalation gap`},
+        {label:'Live video during alerts', off:true},
+        {label:'Ambulance auto-dispatch', off:true},
+      ])}
+    ${planCardHTML('plus','Plus','For daily commuters',[
+        {label:'Everything in Free'},
+        {label:'Up to 5 emergency contacts'},
+        {label:'Live video &amp; photo capture'},
+        {label:'Ambulance auto-dispatch (108)'},
+        {label:'Priority escalation queue'},
+      ], true)}
+    ${planCardHTML('family','Family','Cover up to 5 riders',[
+        {label:'Everything in Plus'},
+        {label:'5 riders on one account'},
+        {label:'Shared family live map'},
+        {label:'30-day incident history'},
+        {label:'24/7 human response desk'},
+      ])}
+    <div class="calm-note"><svg class="icon"><use href="#i-lock"/></svg><p>This is a demo checkout — no real card is charged. Cancel anytime from Device → Preferences.</p></div>
+  `;
+  document.getElementById('bMonthly').onclick = ()=>{ billingCycle='monthly'; renderPlans(); };
+  document.getElementById('bYearly').onclick = ()=>{ billingCycle='yearly'; renderPlans(); };
+  content.querySelectorAll('[data-plan]').forEach(b=>b.onclick = ()=>{
+    const id = b.dataset.plan;
+    if(id==='free'){ subscriptionTier='free'; showToast('Switched to Free plan'); renderPlans(); return; }
+    checkoutTarget = id;
+    openCheckout();
+  });
+}
+
+function openCheckout(){
+  const price = priceFor(checkoutTarget);
+  const name = checkoutTarget==='family' ? 'Family' : 'Plus';
+  const screen = document.querySelector('.screen');
+  const veil = document.createElement('div');
+  veil.className = 'modal-veil';
+  veil.id = 'checkoutVeil';
+  veil.innerHTML = `
+    <div class="modal-sheet">
+      <h3>Upgrade to AEGIS ${name}</h3>
+      <div class="msub">Billed ${billingCycle} · cancel anytime</div>
+      <input type="text" id="ccName" placeholder="Name on card" maxlength="40">
+      <input type="text" id="ccNum" placeholder="Card number" maxlength="19" inputmode="numeric">
+      <div class="pay-row">
+        <div class="mini-form"><input type="text" id="ccExp" placeholder="MM/YY" maxlength="5"></div>
+        <div class="mini-form"><input type="text" id="ccCvv" placeholder="CVV" maxlength="3" inputmode="numeric"></div>
+      </div>
+      <div class="pay-total"><span class="muted">Total due today</span><b>₹${price.amount}${price.per}</b></div>
+      <div class="modal-actions">
+        <button id="ccCancel">Cancel</button>
+        <button class="pay-confirm" id="ccPay" disabled><svg class="icon" style="width:15px;height:15px"><use href="#i-lock"/></svg>Pay &amp; subscribe</button>
+      </div>
+      <div class="lock-note"><svg class="icon" style="width:12px;height:12px"><use href="#i-lock"/></svg>Simulated payment · no card is ever charged in this demo</div>
+    </div>`;
+  screen.appendChild(veil);
+
+  const num = document.getElementById('ccNum');
+  num.oninput = ()=>{ num.value = num.value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim(); validateCheckout(); };
+  const exp = document.getElementById('ccExp');
+  exp.oninput = ()=>{ let v=exp.value.replace(/\D/g,'').slice(0,4); if(v.length>=3) v=v.slice(0,2)+'/'+v.slice(2); exp.value=v; validateCheckout(); };
+  ['ccName','ccCvv'].forEach(id=>document.getElementById(id).oninput = validateCheckout);
+
+  document.getElementById('ccCancel').onclick = closeCheckout;
+  document.getElementById('ccPay').onclick = ()=>{
+    subscriptionTier = checkoutTarget;
+    const sheet = veil.querySelector('.modal-sheet');
+    sheet.innerHTML = `
+      <div class="pay-success">
+        <div class="ok-ring"><svg class="icon"><use href="#i-check"/></svg></div>
+        <h3>You're on AEGIS ${name}</h3>
+        <p class="muted" style="margin:6px 0 18px;">Live video, faster escalation and up to ${checkoutTarget==='family'?'5 riders':'5 contacts'} are active now.</p>
+        <button class="plan-btn" style="background:var(--primary); border-color:var(--primary); color:#fff;" id="ccDone">Done</button>
+      </div>`;
+    document.getElementById('ccDone').onclick = closeCheckout;
+    try{ navigator.vibrate && navigator.vibrate(60); }catch(e){}
+  };
+}
+function validateCheckout(){
+  const name = document.getElementById('ccName')?.value.trim();
+  const num = document.getElementById('ccNum')?.value.replace(/\s/g,'');
+  const exp = document.getElementById('ccExp')?.value;
+  const cvv = document.getElementById('ccCvv')?.value;
+  const ok = name && name.length>1 && num?.length===16 && /^\d{2}\/\d{2}$/.test(exp||'') && cvv?.length===3;
+  const btn = document.getElementById('ccPay');
+  if(btn) btn.disabled = !ok;
+}
+function closeCheckout(){
+  const veil = document.getElementById('checkoutVeil');
+  if(veil){ veil.remove(); }
+  renderPlans();
+}
+
+/* ---------------- DEVICE ---------------- */
+function renderDevice(){
+  header.innerHTML = `<div class="eyebrow">Hardware</div><h1>Your device</h1>`;
+  content.innerHTML = `
+    <div class="toggle2">
+      <button id="tCar"><svg class="icon" style="width:15px;height:15px"><use href="#i-car"/></svg>Car</button>
+      <button id="tBike"><svg class="icon" style="width:15px;height:15px"><use href="#i-bike"/></svg>Bike</button>
+    </div>
+    <div class="card" id="installCard"></div>
+    <div class="device-id-card">
+      <div class="did-top"><svg class="icon" style="width:15px;height:15px"><use href="#i-chip"/></svg><span>AEGIS UNIT</span><span class="did-live"><span class="d"></span>Paired</span></div>
+      <div class="did-code">AX-2291-BK</div>
+      <div class="did-sub">Bench-tested at 4–5g / 150ms deceleration · 45° roll threshold · firmware v0.9-concept</div>
+    </div>
+    <div class="section-title">Sensors</div>
+    <div class="card">
+      <div class="spec-row"><svg class="icon"><use href="#i-chip"/></svg><div><b>ESP32 + 6-axis IMU</b><span>Impact, rollover &amp; fall detection</span></div></div>
+      <div class="spec-row"><svg class="icon"><use href="#i-pin"/></svg><div><b>GPS · NEO-M8N</b><span>2–3m accuracy, locked</span></div></div>
+      <div class="spec-row"><svg class="icon"><use href="#i-satellite"/></svg><div><b>Satellite SOS backup</b><span>Standing by for dead zones</span></div></div>
+      <div class="spec-row"><svg class="icon"><use href="#i-mic"/></svg><div><b>Camera + mic</b><span>Ready to stream on alert</span></div></div>
+    </div>
+    <div class="section-title">Automation timing — editable</div>
+    <div class="card">
+      <div class="timing-row">
+        <div class="row"><b>Confirmation window</b><span class="val" id="confirmVal">${settings.confirmSec}s</span></div>
+        <input type="range" id="confirmRange" min="5" max="20" step="1" value="${settings.confirmSec}">
+        <span class="help">Time to tap "I'm OK" before AEGIS sends the first alert automatically.</span>
+      </div>
+      <div class="timing-row">
+        <div class="row"><b>Per-contact response gap</b><span class="val" id="gapVal">${settings.gapSec}s</span></div>
+        <input type="range" id="gapRange" min="3" max="15" step="1" value="${settings.gapSec}">
+        <span class="help">How long each contact gets to respond before it moves to the next — and finally the ambulance.</span>
+      </div>
+    </div>
+    <div class="section-title">Preferences</div>
+    <div class="card">
+      <div class="switch-row"><div><b>Silent mode</b><span>Mute buzzer, app-only alerts</span></div><div class="switch" id="sw1"></div></div>
+      <div class="switch-row"><div><b>Share live feed with 112</b><span>Auto-attach video to dispatch</span></div><div class="switch on" id="sw2"></div></div>
+      <div class="switch-row"><div><b>Camera access</b><span>Needed for live video during an alert</span></div><div class="switch ${camState==='granted'?'on':''}" id="sw3"></div></div>
+    </div>
+  `;
+  document.getElementById('confirmRange').oninput = (e)=>{ settings.confirmSec = +e.target.value; document.getElementById('confirmVal').textContent = settings.confirmSec+'s'; };
+  document.getElementById('gapRange').oninput = (e)=>{ settings.gapSec = +e.target.value; document.getElementById('gapVal').textContent = settings.gapSec+'s'; };
+  document.getElementById('sw3').onclick = ()=>{
+    if(camState==='granted'){ stopCamera(); renderDevice(); }
+    else{ currentSosRender = renderDevice; kickCamera(); }
+  };
+  const installCard = document.getElementById('installCard');
+  function paintInstall(){
+    document.getElementById('tCar').classList.toggle('active', installType==='car');
+    document.getElementById('tBike').classList.toggle('active', installType==='bike');
+    installCard.innerHTML = installType==='car' ? `
+      <div class="spec-row" style="border-top:none;"><svg class="icon"><use href="#i-battery"/></svg><div><b>Main unit — under dash</b><span>Powered via OBD-II, 6h backup battery</span></div></div>
+      <div class="spec-row"><svg class="icon"><use href="#i-video"/></svg><div><b>Camera — windshield</b><span>Cabin + forward view</span></div></div>
+    ` : `
+      <div class="spec-row" style="border-top:none;"><svg class="icon"><use href="#i-battery"/></svg><div><b>Main unit — under seat</b><span>IP66 weatherproof, solar-assist trickle</span></div></div>
+      <div class="spec-row"><svg class="icon"><use href="#i-video"/></svg><div><b>Camera — handlebar</b><span>Rider's-eye view</span></div></div>
+    `;
+  }
+  document.getElementById('tCar').onclick = ()=>{installType='car'; paintInstall();};
+  document.getElementById('tBike').onclick = ()=>{installType='bike'; paintInstall();};
+  paintInstall();
+  document.getElementById('sw1').onclick = (e)=>e.currentTarget.classList.toggle('on');
+  document.getElementById('sw2').onclick = (e)=>e.currentTarget.classList.toggle('on');
+}
+
+/* ---------------- clock ---------------- */
+function tickClock(){
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false});
+}
+tickClock(); setInterval(tickClock, 30000);
+
+render('home');
+</script>
+</body>
+</html>
